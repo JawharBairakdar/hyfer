@@ -3,7 +3,8 @@ import Modal from '../../../../../Helpers/Modal/Modal'
 import classes from './addNewModuleModal.css'
 import { timelineStore } from '../../../../../store'
 import moment from 'moment'
-import { errorMessage } from '../../../../../notify';
+import { errorMessage } from '../../../../../notify'
+import { Consumer, appStore } from '../../../../../Provider'
 
 export default class AddNewModuleModal extends Component {
     state = {
@@ -18,8 +19,8 @@ export default class AddNewModuleModal extends Component {
         maxDate: ''
     }
 
-    getSharedDatesBetweenGroups = () => {
-        return timelineStore.getSharedDates(this.props.items)
+    getSharedDatesBetweenGroups = items => {
+        return timelineStore.getSharedDates(items || this.state.items)
     }
 
     handleChangeDuration = e => {
@@ -30,7 +31,7 @@ export default class AddNewModuleModal extends Component {
         const groupName = e.target.value
         this.setState({ selectedGroup: groupName })
         if (groupName !== 'All classes') {
-            const modules = this.props.items[groupName]
+            const modules = this.state.items[groupName]
             const startingsOfModule = modules.map(module => module.starting_date)
             const min = moment.min(startingsOfModule)
             const endingsOfModule = modules.map(module => module.ending_date)
@@ -150,7 +151,7 @@ export default class AddNewModuleModal extends Component {
             })
             return
         }
-        const { items } = this.props
+        const { items } = this.state
         // this step is weird but it's just to pass the modules of a class instead of all of them, or if all classes is selected pass em all
         let className = Object.keys(items).filter(
             group => group === this.state.selectedGroup
@@ -168,7 +169,7 @@ export default class AddNewModuleModal extends Component {
         let groupWithId = 'All classes'
         // if the classname is all classes don't get the object group with id on it, cause there isn't one for all classes
         if (className !== 'All classes') {
-            groupWithId = this.props.groupsWithIds.filter(
+            groupWithId = this.state.groupsWithIds.filter(
                 group => group.group_name === selectedGroup // if something matched it is instead of 'All classes'
             )[0]
         }
@@ -186,10 +187,10 @@ export default class AddNewModuleModal extends Component {
             }).catch(errorMessage) // catching the error By propagation from src/store/TimeLineStore
     }
 
-    setInitialState = props => {
-        const { modules, groups, items } = props
+    setInitialState = store => {
+        const { modules, groups, items } = store
         if (!modules || !groups || !items) return
-        const { min, max } = this.getSharedDatesBetweenGroups()
+        const { min, max } = this.getSharedDatesBetweenGroups(items)
         this.setState({
             selectedGroup: 'All classes',
             selectedModuleId: modules[0].id,
@@ -200,18 +201,23 @@ export default class AddNewModuleModal extends Component {
         });
     };
 
-    // set up the default state
-    componentWillReceiveProps = props => {
-        if (!this.state.mountedFirstTime) {
-            this.setInitialState(props)
-        }
+    componentWillMount() {
     }
-
+    
     render() {
-        const { groups } = this.props
-        const { modules, allSundays } = timelineStore.getState()
+        const { groups, items, groupsWithIds, modules } = appStore.state.timeline
+        // console.log(appStore.state.timeline)
+
+        const { allSundays } = timelineStore.getState()
         if (!groups || !modules || !allSundays) return null
         const groupsPlus = ['All classes', ...groups]
+
+        // set up the default state
+        if (!this.state.mountedFirstTime) this.setInitialState({ items, groups, modules })
+        if (groups && this.state.groups !== groups) this.setState({ groups })
+        if (items && this.state.items !== items) this.setState({ items })
+        if (groupsWithIds && this.state.groupsWithIds !== groupsWithIds) this.setState({ groupsWithIds })
+        if (modules && this.state.modules !== modules) this.setState({ modules })
 
         return (
             <Modal

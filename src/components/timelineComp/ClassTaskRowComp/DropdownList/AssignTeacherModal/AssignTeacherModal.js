@@ -86,7 +86,7 @@ export default class AssignTeacherModal extends Component {
 
   componentWillReceiveProps = props => {
     const { teachers, infoSelectedModule } = props
-    if (teachers && infoSelectedModule) {
+     if (teachers.length && infoSelectedModule) {
       this.setState({ teacher1: teachers[0].id, teacher2: teachers[1].id })
       const { teacher1_id, teacher2_id } = infoSelectedModule
       if (teacher1_id) {

@@ -4,7 +4,6 @@ import {
     ALL_WEEKS_CHANGED,
     ALL_POSSIBLE_MODULES_CHANGED,
     ALL_SUNDAYS_CHANGED,
-    ALL_TEACHERS_CHAGNED,
     INFO_SELECTED_MDOULE_CHANGED,
     GROUPS_WITH_IDS_CHANGED
 } from "./"
@@ -23,7 +22,6 @@ import {
     addNewModuleToClass,
     removeModule,
     getAllSharedDates,
-    getTeachers,
     getModulesOfGroup,
     getAllGroupsWithIds
 } from "../util"
@@ -68,7 +66,6 @@ export default function () {
         const timelineItems = await getTimelineItems(
             BASE_URL + "/api/timeline"
         ) // if any error appears we will catch it by propagation
-
         // set the state with the array of all current groups [maybe needed for sidecolumn group names]
         const groups = Object.keys(timelineItems)
         groups.sort((group1, group2) => {
@@ -106,6 +103,7 @@ export default function () {
             // if the user has any other problems?!
             errorMessage(e)
         })
+
         setState({
             type: ALL_POSSIBLE_MODULES_CHANGED,
             payload: {
@@ -134,19 +132,6 @@ export default function () {
                 allWeeks
             }
         })
-
-        if (isTeacher) {
-            getTeachers().then(res => {
-                const teachers = res.filter(user => user.role === "teacher")
-                setState({
-                    type: ALL_TEACHERS_CHAGNED,
-                    payload: {
-                        teachers
-                    }
-                })
-            }) // if any error appears we will catch it by propagation
-        }
-
 
         setState({
             type: TIMELINE_GROUPS_CHANGED,
@@ -193,10 +178,10 @@ export default function () {
         return (
             // item.id is the id of the group
             assignTeachers(item, item.id, teacher1, teacher2)
-            // when done go back throught the whole procedure to get the items on screen
-            .then(() => {
-                fetchItems()
-            })
+                // when done go back throught the whole procedure to get the items on screen
+                .then(() => {
+                    fetchItems()
+                })
         )
     }
 

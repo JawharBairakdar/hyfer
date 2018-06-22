@@ -12,13 +12,43 @@ import React from 'react'
 // -- Object on the whole Application level
 const Store = function () {
     const state = {}
+    const events = {}
+
     return {
-        get state() { return this._state },
-        _state: { ...state },
+        get state() { return state },
         set: function (item) {
-            this._state = {
-                ...this._state,
-                ...item
+            if (typeof item === 'object') {
+                const keys = Object.keys(item)
+                keys.forEach(key => {
+                    state[key] = item[key]
+                })
+            } else if (typeof item === 'function') {
+                const latestState = item(this.state)
+                this.set(latestState)
+            }
+        },
+        get events() { return events },
+        on: function (event, callback) {
+            events[event] = events[event] || []
+            events[event].push(callback)
+        },
+        emit: function (event) {
+            if (events[event]) {
+                events[event].forEach(callback => {
+                    callback()
+                })
+            }
+        },
+        omit: function (event) {
+            const originEvents = events[event]
+            if (originEvents) {
+                originEvents.forEach((Func, i) => {
+                    const eventFunc_string = Func.toString()
+                    const originFunc_string = originEvents[i].toString()
+                    if (eventFunc_string === originFunc_string) {
+                        originEvents.splice(i, 1)
+                    }
+                })
             }
         }
     }

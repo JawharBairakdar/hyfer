@@ -25,10 +25,6 @@ export default class Button extends Component {
             title="Add a class"
           />
           <AddDropdownList
-            groupsWithIds={this.props.groupsWithIds}
-            items={this.props.items}
-            modules={this.props.modules}
-            groups={this.props.groups}
             isToggled={this.state.isToggled}
           />
         </Fragment>

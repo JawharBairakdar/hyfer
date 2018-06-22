@@ -11,14 +11,7 @@ import {
     moduleInfoStore,
     uiStore,
     timelineStore,
-    TIMELINE_ITEMS_CHANGED,
-    TIMELINE_GROUPS_CHANGED,
-    ALL_WEEKS_CHANGED,
-    TODAY_MARKER_REFERENCE,
     SELECTED_MODULE_ID_CHANGED,
-    ALL_POSSIBLE_MODULES_CHANGED,
-    GROUPS_WITH_IDS_CHANGED,
-    ALL_TEACHERS_CHAGNED,
     INFO_SELECTED_MDOULE_CHANGED
 } from "../../store/index"
 
@@ -36,51 +29,19 @@ export default class TimeLine extends Component {
         history: null,
         duration: null,
         students: null,
-        timelineItems: null,
-        groups: null,
-        allWeeks: null,
         todayMarkerRef: null,
         selectedModule: null,
-        modules: null,
-        groupsWithIds: null,
-        teachers: null,
         infoSelectedModule: null
     }
 
     timelineObserver = mergedData => {
+        // Containing the Current file useage Other things?? ~> in the appStore
         switch (mergedData.type) {
-            case TIMELINE_ITEMS_CHANGED:
-                this.setState({ timelineItems: mergedData.payload.items })
-                break
-            case ALL_TEACHERS_CHAGNED:
-                this.setState({ teachers: mergedData.payload.teachers })
-                break
-            case GROUPS_WITH_IDS_CHANGED:
-                this.setState({ groupsWithIds: mergedData.payload.groupsWithIds })
-                break
-            case TODAY_MARKER_REFERENCE:
-                this.setState({ todayMarkerRef: mergedData.payload.todayMarkerRef })
-                break
-            case TIMELINE_GROUPS_CHANGED:
-                this.setState({ groups: mergedData.payload.groups })
-                break
             case SELECTED_MODULE_ID_CHANGED:
-                this.setState({
-                    selectedModule: mergedData.payload.selectedModule
-                })
-                break
-            case ALL_WEEKS_CHANGED:
-                const { allWeeks } = mergedData.payload
-                this.setState({ allWeeks: allWeeks })
-                break
-            case ALL_POSSIBLE_MODULES_CHANGED:
-                const { modules } = mergedData.payload
-                this.setState({ modules })
+                this.setState({ selectedModule: mergedData.payload.selectedModule })
                 break
             case INFO_SELECTED_MDOULE_CHANGED:
-                this.setState({
-                    infoSelectedModule: mergedData.payload.allModulesOfGroup
-                })
+                this.setState({ infoSelectedModule: mergedData.payload.allModulesOfGroup })
                 break
             default:
                 break
@@ -145,17 +106,13 @@ export default class TimeLine extends Component {
             history,
             repoName,
             readme,
-            timelineItems,
-            groups,
-            allWeeks,
             totalWeeks,
             selectedModule,
-            modules,
-            groupsWithIds,
-            teachers,
             infoSelectedModule,
-            tab
+            tab,
+            todayMarkerRef
         } = this.state
+
         let content = <ModuleReadme readme={readme} repoName={repoName} />
         if (tab === "attendance") {
             content = (
@@ -173,6 +130,10 @@ export default class TimeLine extends Component {
             <Consumer>{appStore => {
                 // collecting the main state from appStore
                 const { auth } = appStore.state.main
+                const {
+                    items, groups, teachers, modules
+                } = appStore.state.timeline
+
                 // setting up the teacher role on the whole page
                 if (auth.isATeacher && this.state.isATeacher !== auth.isATeacher) this.setState({ isATeacher: auth.isATeacher })
                 // setting up the props for the <TimelineComp /> from the whole page
@@ -180,11 +141,13 @@ export default class TimeLine extends Component {
                     itemWidth: 170,
                     rowHeight: 70,
                     isTeacher: auth.isATeacher,
-                    timelineItems, groups, allWeeks, totalWeeks,
-                    selectedModule, groupsWithIds, infoSelectedModule,
+                    timelineItems: items,
+                    groups, totalWeeks,
+                    selectedModule, infoSelectedModule,
                     itemClickHandler: this.itemClickHandler,
                     allModules: modules,
                     teachers: auth.isATeacher && teachers,
+                    todayMarkerRef
                 }
                 return (
                     <main>
