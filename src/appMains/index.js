@@ -2,11 +2,12 @@
 
 import Mains from './Mains'
 
-import TimelineEvents from './Events/Timeline-Events'
-import MainsEvents from './Events/Mains-Events'
+// Why ?!
+import TimelineEvents from './Events/Timeline-Events' // this line is needed
+import MainsEvents from './Events/Mains-Events' // this line is needed
 
 export {
     Mains,
-    TimelineEvents,
-    MainsEvents,
+    TimelineEvents, // no need for this line
+    MainsEvents, // no need for this line
 }

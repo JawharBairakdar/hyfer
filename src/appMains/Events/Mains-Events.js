@@ -109,9 +109,7 @@ appStore.on('Mains-timelineStore-Progress', function () {
         if (mergedData.type === TODAY_MARKER_REFERENCE) timeline_state('todayMarkerRef')
         if (mergedData.type === ALL_WEEKS_CHANGED) timeline_state('allWeeks')
         if (mergedData.type === INFO_SELECTED_MDOULE_CHANGED) timeline_state('allModulesOfGroup', 'infoSelectedModule')
-        if (mergedData.type === INFO_SELECTED_MDOULE_CHANGED) console.log(mergedData.payload['allModulesOfGroup'])
         if (mergedData.type === SELECTED_MODULE_ID_CHANGED) timeline_state('selectedModule')
-        if (mergedData.type === SELECTED_MODULE_ID_CHANGED) console.log(mergedData.payload['selectedModule'])
 
     })
 })

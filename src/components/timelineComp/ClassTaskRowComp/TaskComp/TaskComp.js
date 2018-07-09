@@ -55,9 +55,9 @@ export default class TaskComp extends Component {
             <div>
                 {validSelectedModule && <AssignTeacherModal
                     teachers={this.props.teachers}
-                    id={selectedModule.running_module_id} //
-                    visible={this.state.assignTeacherModalIsToggled} //
-                    closeModal={this.hideAssignTeacherModal} //
+                    id={selectedModule.running_module_id}
+                    visible={this.state.assignTeacherModalIsToggled}
+                    closeModal={this.hideAssignTeacherModal}
                 />}
                 <div
                     className={classes.container}

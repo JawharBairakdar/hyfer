@@ -32,7 +32,6 @@ appStore.on('Timeline-TaskComp-Click-Module', function (clickEvent, item) {
 })
 
 appStore.on('Timeline-AssignTeacherModal-Click-Save', function (selectedModule, teacher1, teacher2) {
-    console.log(selectedModule, teacher1, teacher2)
     const firstTeacher = teacher1 ? teacher1 : appStore.state.timeline.infoSelectedModule.teacher1_id
     const secondTeacher = teacher2 ? teacher2 : appStore.state.timeline.infoSelectedModule.teacher2_id
     timelineStore
@@ -46,11 +45,7 @@ appStore.on('Timeline-AssignTeacherModal-Click-Save', function (selectedModule, 
                     selectedTeacher2: secondTeacher,
                     local_update: true
                 })
-            // if (teacher2)
-            //     this.setState({
-            //     })
-        }) // it's a good idea to show the user his latest changes
-        // .then(() => this.setState({ selectedTeacher1: firstTeacher, selectedTeacher2: secondTeacher }))
+        })
         .then(() => {
             const both = teacher1 && teacher2
             if (teacher1 || teacher2)

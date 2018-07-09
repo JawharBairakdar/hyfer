@@ -3,8 +3,6 @@ import React, { Component } from 'react'
 import Modal from '../../../../../Helpers/Modal/Modal'
 import classes from './assignTeacherModal.css'
 import { appStore } from '../../../../../Provider';
-import { timelineStore } from '../../../../../store';
-import { success, errorMessage } from '../../../../../notify';
 
 export default class AssignTeacherModal extends Component {
     state = {
@@ -21,32 +19,7 @@ export default class AssignTeacherModal extends Component {
     handleAssignTeachers = () => {
         const { teacher1, teacher2 } = this.state
         const { selectedModule } = appStore.state.timeline
-        // appStore.emit('Timeline-AssignTeacherModal-Click-Save', this, selectedModule, teacher1, teacher2)
-        const firstTeacher = teacher1 ? teacher1 : appStore.state.timeline.infoSelectedModule.teacher1_id
-        const secondTeacher = teacher2 ? teacher2 : appStore.state.timeline.infoSelectedModule.teacher2_id
-        timelineStore
-            .handleAssignTeachers(selectedModule, firstTeacher, secondTeacher)
-            .then(() => {
-                if (teacher1)
-                    this.setState({
-                        selectedTeacher1: firstTeacher,
-                        selectedTeacher2: secondTeacher,
-                        toggle: {
-                            teacher1: firstTeacher ? true : false,
-                            teacher2: secondTeacher ? true : false,
-                        }
-                    })
-                // if (teacher2)
-                //     this.setState({
-                //     })
-            }) // it's a good idea to show the user his latest changes
-            // .then(() => this.setState({ selectedTeacher1: firstTeacher, selectedTeacher2: secondTeacher }))
-            .then(() => {
-                const both = teacher1 && teacher2
-                if (teacher1 || teacher2)
-                    success(`Success Assigning teacher${(both && 's') || ''}.`)
-            })
-            .catch(errorMessage)
+        appStore.emit('Timeline-AssignTeacherModal-Click-Save', this, selectedModule, teacher1, teacher2)
     }
 
     handleChangeTeacher = (value, num) => {
@@ -99,24 +72,6 @@ export default class AssignTeacherModal extends Component {
         )
     }
 
-    // componentDidMount = () => {
-    //     const { teachers, selectedModule, infoSelectedModule } = appStore.state.timeline
-    //     console.log(selectedModule)
-    //     if (teachers.length && infoSelectedModule) {
-    //         const { teacher1_id, teacher2_id } = infoSelectedModule
-
-    //         this.setState({
-    //             selectedTeacher1: teacher1_id,
-    //             selectedTeacher2: teacher2_id,
-    //             toggle: {
-    //                 teacher1: teacher1_id ? true : false,
-    //                 teacher2: teacher2_id ? true : false,
-    //             }
-    //         })
-    //     }
-
-    // }
-
     componentWillUpdate(nextProps, nextState) {
         console.log(nextState)
         const { teachers, selectedModule, infoSelectedModule } = appStore.state.timeline
@@ -126,12 +81,12 @@ export default class AssignTeacherModal extends Component {
         if (teachers.length) {
             const { teacher1_id, teacher2_id } = infoSelectedModule
 
-            if (!toggle.teacher1 && toggle.edit1) { // if teacher1 toggle it
+            if (!toggle.teacher1) { // if teacher1 toggle it
                 // do something...
                 return
             }
 
-            if (!toggle.teacher2 && toggle.edit2) { // if teacher1 toggle it
+            if (!toggle.teacher2) { // if teacher1 toggle it
                 // do something...
                 return
             }
@@ -148,7 +103,7 @@ export default class AssignTeacherModal extends Component {
             }
 
             if (teacher2_id && !selectedTeacher2) {
-                this.setState(prevState =>({
+                this.setState(prevState => ({
                     selectedTeacher2: teacher2_id,
                     toggle: {
                         ...prevState.toggle,
@@ -157,32 +112,9 @@ export default class AssignTeacherModal extends Component {
                 }))
             }
 
-            //     // console.log('this.props.visible,', nextState.selectedTeacher1, nextState.teacher1 , teacher1_id )
-
-            //     if (!nextState.teacher1 && !nextState.selectedTeacher1 && nextState.local_update) return
-
-            //     if (nextState.teacher1 && nextState.selectedTeacher1 !== nextState.teacher1 && local_update) this.setState({ selectedTeacher1: nextState.teacher1 })
-            //     else if (teacher1_id && !nextState.selectedTeacher1) this.setState({ selectedTeacher1: teacher1_id })
-            //     else if (!teacher1_id && nextState.selectedTeacher1) this.setState({ selectedTeacher1: null })
-
-            //     if (nextState.teacher2 && nextState.selectedTeacher2 !== nextState.teacher2 && local_update) this.setState({ selectedTeacher2: nextState.teacher2 })
-            //     else if (teacher2_id && !nextState.selectedTeacher2) this.setState({ selectedTeacher2: teacher2_id })
-            //     else if (!teacher2_id && nextState.selectedTeacher2) this.setState({ selectedTeacher2: null })
-            /*
-                if (teacher1_id && !nextState.selectedTeacher1) this.setState({ selectedTeacher1: teacher1_id })
-                else if (!teacher1_id && nextState.selectedTeacher1) this.setState({ selectedTeacher1: null })
-                
-                if (teacher2_id && !nextState.selectedTeacher2) this.setState({ selectedTeacher2: teacher2_id })
-                else if (!teacher2_id && nextState.selectedTeacher2) this.setState({ selectedTeacher2: null })
-            */
         }
     }
 
-    // componentDidUpdate(prevProps, prevState) {
-    //     if (this.state.local_update && this.state.teacher1) {
-    //         this.setState({ local_update: false })
-    //     }
-    // }
 
     closeModal = () => {
         const { infoSelectedModule } = appStore.state.timeline
@@ -257,17 +189,8 @@ const ChosenTeacher =
                 : <Selector />
         )
     }
-// class ChosenTeacher extends Component {
-//     render() {
-//         return (
-//             this.props.teacher ?
-//                 <AssignedTeacher
-//                     {...this.props.teacher}
-//                     unAssignTeacher={this.props.unAssignTeacher} />
-//                 : <Selector />
-//         )
-//     }
-// }
+
+
 const Former = props => {
     return (
         <React.Fragment>

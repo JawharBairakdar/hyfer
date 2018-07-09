@@ -10,9 +10,6 @@ import {
     HISTORY_CHANGED,
     moduleInfoStore,
     uiStore,
-    timelineStore,
-    SELECTED_MODULE_ID_CHANGED,
-    INFO_SELECTED_MDOULE_CHANGED
 } from "../../store/index"
 
 import { errorMessage } from '../../notify'
@@ -31,25 +28,6 @@ export default class TimeLine extends Component {
         selectedModule: null,
         infoSelectedModule: null
     }
-
-    // timelineObserver = mergedData => {
-    //     // Containing the Current file useage Other things?? ~> in the appStore
-    //     switch (mergedData.type) {
-    //         case SELECTED_MODULE_ID_CHANGED:
-    //             this.setState({ selectedModule: mergedData.payload.selectedModule })
-    //             break
-    //         case INFO_SELECTED_MDOULE_CHANGED:
-    //             console.log('hello world!', mergedData.payload.allModulesOfGroup)
-    //             this.setState({ infoSelectedModule: mergedData.payload.allModulesOfGroup })
-    //             break
-    //         default:
-    //             break
-    //     }
-    // }
-
-    // componentWillMount() {
-    //     timelineStore.subscribe(this.timelineObserver)
-    // }
 
     componentDidMount() {
         moduleInfoStore.subscribe(mergedData => {
@@ -89,7 +67,7 @@ export default class TimeLine extends Component {
             tab,
             todayMarkerRef
         } = this.state
-        // console.log(appStore.state)
+
         let content = <ModuleReadme readme={readme} repoName={repoName} />
         if (tab === "attendance") {
             content = (

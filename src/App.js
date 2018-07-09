@@ -40,7 +40,7 @@ const defaultState = {
         isStudent: false,
     },
     done: false,
-    update: true, // it's just for the shouldcomponentupdate() available
+    update: true,
     scopes: {
         ok: false,
         items: ['public']
@@ -49,24 +49,17 @@ const defaultState = {
         ok: false,
         items: []
     },
-    timeline: { // there is no need for this here
-        ok: false, // NOT MORE THAN THIS NEEDED
+    timeline: {
+        ok: false, 
         timeline_setState: null
     }
 }
 
 class App extends Component {
 
-    /*** The Roles In Frontend ***/
-
     state = { ...defaultState }
 
-    // For any new Secure Routes we can adding them here:
-    // NOTE: if there is any new scope we wanna add here tell me
-    // -- or Figure it your self 😐
     routes = {
-        // labels for sub pages or with a functionality
-        // -- for more info see Header.js
         teacher: [
             { exact: true, path: '/modules', component: Modules, name: 'Modules' },
             { exact: true, path: '/users', component: Users, name: 'Users' },
@@ -80,7 +73,7 @@ class App extends Component {
             { exact: true, path: '/homework', component: Homework, name: 'Homework' },
             { exact: true, path: '/homework/:classNumber', component: Homework },
         ],
-        guest: [ // and all of the users can share some stuff
+        guest: [
             { exact: true, path: '/userAccount', component: userAccount, label: 'Manage Account' },
             { exact: true, path: '/currentUserProfile', component: currentUserProfile, label: 'My Profile' },
         ],
@@ -89,10 +82,7 @@ class App extends Component {
         ],
         NotFound: { component: NotFound },
     }
-    // this will contain the Route props from the user scopes
-    // setting locals as a properties is faster than the async state
-    // -- then we will move it to the state making sure it will
-    // -- be added as a one time not on batches to the state
+
     locals = {
         securedRouteProps: [],
         scopes: ['public']
@@ -100,32 +90,24 @@ class App extends Component {
 
     setUserRouteProps = item => {
         const { securedRouteProps } = this.locals
-        // Only the Objects that has the same path property
+
         const value = securedRouteProps.find(obj => {
             return obj.path === item.path
         })
-        // - pushing a clean type of the user scopes routes
-        // -- if the returned from .find() Method is 'undefined'
-        // -- then we need it
+
         if (!value) securedRouteProps.push(item)
         return value
     }
 
-    findRoutes = (localState) => { // the state ~> depending on the lifecycle the function called in!
-        // - this function is responsible on matching in 
-        // -- the routes Object and returning the correct 
-        // -- result if there is a one
-        // the default scope is ['public']
+    findRoutes = (localState) => {
         if (!localState) localState = this.state
         const scopes = localState.scopes.items
         scopes.forEach(scope => {
             this.routes[scope].forEach(item => {
-                // - calling setUserRouteProps() method that will assign 
-                // -- every route the user has an access to it
                 this.setUserRouteProps(item)
             })
         })
-        this.setState({ // after the locals.securedRouteProps Did Fill in we will pass them into the state
+        this.setState({
             routes: {
                 ok: this.routesCounter(scopes) === this.locals.securedRouteProps.length,
                 items: this.locals.securedRouteProps
@@ -135,7 +117,6 @@ class App extends Component {
     }
 
     routesCounter = scopes => {
-        // this function only for counting the complete routes number
         let count = 0
         scopes.forEach(scope => {
             count = count + this.routes[scope].length
@@ -147,17 +128,13 @@ class App extends Component {
         const rolled_to_be = someBody => {
             this.locals.scopes = this.locals.scopes.filter(item => item !== someBody).concat(someBody)
         }
-        // what the users role?
+
         if (isATeacher) rolled_to_be('teacher')
         if (isStudent) rolled_to_be('student')
-        if (isLoggedIn) rolled_to_be('guest') // in All loggin cases he is a guest
+        if (isLoggedIn) rolled_to_be('guest')
     }
 
     visitorDefaultes = () => {
-        // this should be called for the visitors only
-        // DON'T PUT IT IN shouldComponentUpdate() 
-        // -- it will stuck into an infinite loop OR
-        // -- it will not set the defaults as they should be
         this.findRoutes(this.state)
         this.setState({
             auth: {
@@ -177,10 +154,6 @@ class App extends Component {
         if (token && typeof token !== 'undefined') {
             token = JSON.parse(token)
         } else {
-            // if there is no token or it's malformed that means the visitor 
-            // is not loggedin the following function is just to put every thing
-            // to normal for viewing porposes and set the token as an empty token
-            // making sure the token will be empty
             this.visitorDefaultes()
             token = ''
         }
@@ -195,17 +168,12 @@ class App extends Component {
                     auth: {
                         ...this.state.auth,
                         [type]: mergedData.payload[type],
-                        // the maximum number of the roles types is 3 
-                        // so we have to check the roles for the 3 types
-                        // when ever is done it will be true otherwise it's false
                         ok: (i === 3) || this.state.done, // -- IF ANY ROLE HAS BEEN ADJUSTED THIS NUMBER MUST CHANGE
-                        // Offcourse it will never arrive to the done if it wasn't pass this point before
-                        // -- BUG Explination: after it's done it's returning to be false because the number is not 3 any more
                     },
                     update: true,
                 })
             }
-            // checking the roles on 3 types
+
             if (mergedData.type === LOGIN_STATE_CHANGED) user_state('isLoggedIn')
             if (mergedData.type === ISTEACHER_STATE_CHANGED) user_state('isATeacher')
             if (mergedData.type === ISSTUDENT_STATE_CHANGED) user_state('isStudent')
@@ -213,9 +181,6 @@ class App extends Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        // in the following few lines we are making sure that no one
-        // -- isn't loggedIn will pass this lifeCycle OR this lifeCycle  
-        // -- will never be called on unnecessary conditions
         const { auth, update } = nextState
         const hasRoles = auth.isStudent || auth.isATeacher || auth.isLoggedIn
 
@@ -223,20 +188,13 @@ class App extends Component {
     }
 
     componentWillUpdate(nextProps, nextState) {
-        // in case a controlled visitor update
+
         if (nextState.auth.visitor) return
 
-        // NOTE: NO BODY CAN ARRIVE AFTER THIS LINE IF HE IS NOT LOGGED IN
-
-        this.setScopes(nextState.auth) // if the user has a role or even LoggedIn assign the roles
-        // -- in this way (nextState) we are setting the roles from the first few renders
-        // -- Before even it get into state it self
+        this.setScopes(nextState.auth)
 
         if (!nextState.scopes.ok) {
-            // making sure that the scopes won't changed on every render
-            // otherwise it will be an infinte loop!!
             this.setState({
-                // set the scopes on the state after they have excuted
                 scopes: {
                     ok: true,
                     items: this.locals.scopes
@@ -248,15 +206,8 @@ class App extends Component {
 
     componentDidUpdate(prevProps, prevState) {
         const { auth, scopes, routes, timeline, done } = this.state
-        // making sure that everything is Okay
-        const isOkay = auth.ok && scopes.ok && routes.ok && timeline.ok
 
-        // After all of the checking for login and Stuff
-        // He need his page!!
-        // - NOTE: this function here Only for assigning 
-        // -- the user routes to the ( locals.securedRouteProps ) Array
-        // - AND NOTE: without this function the user may never
-        // -- arrive to his distenation path
+        const isOkay = auth.ok && scopes.ok && routes.ok && timeline.ok
 
         if (!isOkay && !done) return this.setState({ done: false, update: false })
         else if (isOkay && !done) return this.setState({ done: true, update: true })

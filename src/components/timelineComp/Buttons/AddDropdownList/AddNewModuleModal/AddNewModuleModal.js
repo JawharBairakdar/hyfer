@@ -206,7 +206,6 @@ export default class AddNewModuleModal extends Component {
     
     render() {
         const { groups, items, groupsWithIds, modules } = appStore.state.timeline
-        // console.log(appStore.state.timeline)
 
         const { allSundays } = timelineStore.getState()
         if (!groups || !modules || !allSundays) return null
