@@ -1,14 +1,12 @@
 import React, { Component } from "react"
 
-import { timelineStore, TODAY_MARKER_REFERENCE, ALL_WEEKS_CHANGED } from "../../../store"
-
 import WeekComp from "../WeekComp/WeekComp"
 import ClassBarRowComp from "../ClassBarRowComp/ClassBarRowComp"
 import ClassTaskRowComp from "../ClassTaskRowComp/ClassTaskRowComp"
-import loader from "../../../assets/images/Eclipse.gif"
 import Buttons from "../Buttons/Buttons"
 import classes from "./timeline.css"
 import { appStore } from "../../../Provider";
+import { warning } from "../../../notify";
 
 
 export default class Timeline extends Component {
@@ -16,7 +14,7 @@ export default class Timeline extends Component {
         todayMarkerRef: null,
         scrollingParentRef: null,
         local_update: false,
-        allWeeks: null
+        allWeeks: null,
     }
 
     setTodayMarkerRef = ref => {
@@ -24,55 +22,45 @@ export default class Timeline extends Component {
     }
 
     renderWeekComp = () => {
-        if (!this.state.allWeeks) return null
+        const { allWeeks, allWeeks: { error } } = appStore.state.timeline
+        if (error) return <h3 className={classes.centerText}>No Current Classes Running...</h3>
+
         const { rowHeight, itemWidth } = this.props
         return (
             <div className={classes.rowContainer}>
-                {this.state.allWeeks.map(week => (
-                    <WeekComp
-                        setTodayMarkerRef={this.setTodayMarkerRef}
-                        scrollingParentRef={this.refs.timelineWrapper}
-                        key={week}
-                        week={week}
-                        rowHeight={rowHeight}
-                        itemWidth={itemWidth}
-                    />
-                ))}
+                {allWeeks.map(week => {
+
+                    return (
+                        <WeekComp
+                            setTodayMarkerRef={this.setTodayMarkerRef}
+                            scrollingParentRef={this.refs.timelineWrapper}
+                            key={week}
+                            week={week}
+                            rowHeight={rowHeight}
+                            itemWidth={itemWidth}
+                        />
+                    )
+                })}
             </div>
         )
     }
 
     renderTaskRowComp = () => {
-        if (
-            !this.props.groups ||
-            !this.props.timelineItems ||
-            !this.state.allWeeks
-        )
-        // implement the loader giv
-        {
-            return (
-                <div className={classes.divLoading}>
-                    <img src={loader} alt="loader" className={classes.load} />
-                </div>
-            )
-        }
-        // console.log(appStore.state)
-        const { groups, items: timelineItems } = appStore.state.timeline
-        return groups.map(group => {
-            const items = timelineItems[group]
+
+        const { groups, items } = appStore.state.timeline
+        if (groups.error) return warning(groups.error)
+        return groups.map((group, i) => {
+            const [item] = items[group]
             const { itemWidth, rowHeight } = this.props
+
             return (
-                <div key={items[0].group_name} className={classes.rowContainer}>
+                <div key={item.group_name} className={classes.rowContainer}>
                     <ClassTaskRowComp
                         isTeacher={this.props.isTeacher}
                         teachers={this.props.teachers}
-                        selectedModule={this.props.selectedModule}
-                        items={items}
+                        group={group}
                         width={itemWidth}
                         height={rowHeight}
-                        allWeeks={this.state.allWeeks}
-                        itemClickHandler={this.props.itemClickHandler}
-                        infoSelectedModule={this.props.infoSelectedModule}
                     />
 
                 </div>
@@ -80,21 +68,9 @@ export default class Timeline extends Component {
         })
     }
 
-    observer = mergedData => {
-        switch (mergedData.type) {
-            case TODAY_MARKER_REFERENCE:
-                this.setState({ todayMarkerRef: mergedData.payload.todayMarkerRef })
-                break
-            case ALL_WEEKS_CHANGED:
-                this.setState({ allWeeks: mergedData.payload.allWeeks })
-                break
-            default:
-                break
-        }
-    }
-
     handleClickTodayMarker = e => {
         const todayMarker = this.state.todayMarkerRef
+        if (todayMarker === null) return warning('Oops! seems to be no current classes are running...') // instead of todayMarker is null
         const classesContainer = this.refs.classesContainer.refs.groupsRowContainer // hackish way, hope good
         const scrollEl = this.refs.timelineWrapper
         let leftPos = todayMarker.parentNode.getBoundingClientRect().x
@@ -103,12 +79,14 @@ export default class Timeline extends Component {
     }
 
     componentWillMount = () => {
+        const { todayMarkerRef, allWeeks } = appStore.state.timeline
         // so that it gets all setState notification from generated by componentDidMount of children elements
-        timelineStore.subscribe(this.observer)
+        this.setState({
+            todayMarkerRef, allWeeks
+        })
     }
 
     componentDidMount = () => {
-        timelineStore.fetchItems(true)
         this.setState({
             local_update: true
         })
@@ -116,8 +94,7 @@ export default class Timeline extends Component {
 
     render() {
         const { itemWidth, rowHeight } = this.props
-        const { allWeeks } = this.state
-        // console.log(appStore.state)
+        const { main: { auth }, timeline: { allWeeks, groups } } = appStore.state
         // if there items are fetched  width is the 200 times total weeks otherwise it's 100vh
         // FIXME: no idea why this is not working with just 16 instead of 21
         const width = allWeeks
@@ -127,7 +104,7 @@ export default class Timeline extends Component {
 
             <div className="rootContainer">
                 <ClassBarRowComp
-                    groups={appStore.state.timeline.groups}
+                    groups={groups}
                     rowHeight={rowHeight}
                     ref="classesContainer"
                 />
@@ -146,7 +123,7 @@ export default class Timeline extends Component {
                 <div ref="buttonsContainer" className={classes.buttonsContainer}>
                     <Buttons
                         clickHandler={this.handleClickTodayMarker}
-                        isTeacher={appStore.state.main.auth.isATeacher}
+                        isTeacher={auth.isATeacher}
                     />
                 </div>
             </div>

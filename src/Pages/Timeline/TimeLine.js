@@ -16,12 +16,10 @@ import {
 } from "../../store/index"
 
 import { errorMessage } from '../../notify'
-import { Consumer } from '../../Provider'
+import { appStore } from '../../Provider'
 
 export default class TimeLine extends Component {
     state = {
-        isLoggedIn: false,
-        isATeacher: false,
         tab: "readme",
         readme: null,
         repoName: null,
@@ -34,23 +32,24 @@ export default class TimeLine extends Component {
         infoSelectedModule: null
     }
 
-    timelineObserver = mergedData => {
-        // Containing the Current file useage Other things?? ~> in the appStore
-        switch (mergedData.type) {
-            case SELECTED_MODULE_ID_CHANGED:
-                this.setState({ selectedModule: mergedData.payload.selectedModule })
-                break
-            case INFO_SELECTED_MDOULE_CHANGED:
-                this.setState({ infoSelectedModule: mergedData.payload.allModulesOfGroup })
-                break
-            default:
-                break
-        }
-    }
+    // timelineObserver = mergedData => {
+    //     // Containing the Current file useage Other things?? ~> in the appStore
+    //     switch (mergedData.type) {
+    //         case SELECTED_MODULE_ID_CHANGED:
+    //             this.setState({ selectedModule: mergedData.payload.selectedModule })
+    //             break
+    //         case INFO_SELECTED_MDOULE_CHANGED:
+    //             console.log('hello world!', mergedData.payload.allModulesOfGroup)
+    //             this.setState({ infoSelectedModule: mergedData.payload.allModulesOfGroup })
+    //             break
+    //         default:
+    //             break
+    //     }
+    // }
 
-    componentWillMount() {
-        timelineStore.subscribe(this.timelineObserver)
-    }
+    // componentWillMount() {
+    //     timelineStore.subscribe(this.timelineObserver)
+    // }
 
     componentDidMount() {
         moduleInfoStore.subscribe(mergedData => {
@@ -75,28 +74,6 @@ export default class TimeLine extends Component {
         }
     }
 
-    itemClickHandler = (clickEvent, item) => {
-        moduleInfoStore.getHistory(clickEvent, this.state.isATeacher).catch(errorMessage)
-        const selectedItemInStore = timelineStore.getState().selectedModule
-
-        const isItem = selectedItemInStore && item.running_module_id === selectedItemInStore.running_module_id
-
-        if (!item || isItem) {
-            item = null
-        } else if (this.state.isATeacher) {
-            // should be a teacher otherwise it will return 403 Fobiden
-            // if the clicked module is the same on unselect it
-            timelineStore.getSelectedModuleInfo(item)
-        }
-
-        timelineStore.setState({
-            type: SELECTED_MODULE_ID_CHANGED,
-            payload: {
-                selectedModule: item
-            }
-        })
-    }
-
     render() {
         // last item being set in store
         const {
@@ -112,7 +89,7 @@ export default class TimeLine extends Component {
             tab,
             todayMarkerRef
         } = this.state
-
+        // console.log(appStore.state)
         let content = <ModuleReadme readme={readme} repoName={repoName} />
         if (tab === "attendance") {
             content = (
@@ -126,51 +103,43 @@ export default class TimeLine extends Component {
             )
         }
 
-        return (
-            <Consumer>{appStore => {
-                // collecting the main state from appStore
-                const { auth } = appStore.state.main
-                const {
-                    items, groups, teachers, modules
-                } = appStore.state.timeline
+        const { isATeacher } = appStore.state.main.auth
+        const {
+            items, groups, teachers, modules
+        } = appStore.state.timeline
 
-                // setting up the teacher role on the whole page
-                if (auth.isATeacher && this.state.isATeacher !== auth.isATeacher) this.setState({ isATeacher: auth.isATeacher })
-                // setting up the props for the <TimelineComp /> from the whole page
-                const initialProps = {
-                    itemWidth: 170,
-                    rowHeight: 70,
-                    isTeacher: auth.isATeacher,
-                    timelineItems: items,
-                    groups, totalWeeks,
-                    selectedModule, infoSelectedModule,
-                    itemClickHandler: this.itemClickHandler,
-                    allModules: modules,
-                    teachers: auth.isATeacher && teachers,
-                    todayMarkerRef
+        const initialProps = {
+            itemWidth: 170,
+            rowHeight: 70,
+            isTeacher: isATeacher,
+            timelineItems: items,
+            groups, totalWeeks,
+            selectedModule, infoSelectedModule,
+            allModules: modules,
+            teachers: isATeacher && teachers,
+            todayMarkerRef
+        }
+
+        return (
+            <main>
+                <div style={{ marginBottom: "3rem" }}>
+                    <TimelineComp {...initialProps} />
+                </div>
+                {
+                    isATeacher &&
+                    <div className={styles.tabs}>
+                        <button
+                            className={styles.ReadmeTab}
+                            onClick={() => this.setState({ tab: "readme" })}
+                        >Readme</button>
+                        <button
+                            className={styles.AttendanceTab}
+                            onClick={() => this.setState({ tab: "attendance" })}
+                        >Attendance</button>
+                    </div>
                 }
-                return (
-                    <main>
-                        <div style={{ marginBottom: "3rem" }}>
-                            <TimelineComp {...initialProps} />
-                        </div>
-                        {
-                            auth.isATeacher &&
-                            <div className={styles.tabs}>
-                                <button
-                                    className={styles.ReadmeTab}
-                                    onClick={() => this.setState({ tab: "readme" })}
-                                >Readme</button>
-                                <button
-                                    className={styles.AttendanceTab}
-                                    onClick={() => this.setState({ tab: "attendance" })}
-                                >Attendance</button>
-                            </div>
-                        }
-                        {content}
-                    </main>
-                )
-            }}</Consumer>
+                {content}
+            </main>
         )
     }
 }

@@ -49,3 +49,8 @@
   position: absolute;
   margin: 0 auto;
 }
+
+.centerText {
+    display: block;
+    text-align: center
+}

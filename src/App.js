@@ -13,32 +13,23 @@ import Profile from './Pages/Users/Profile'
 import TrainTicket from './Pages/TrainTicket/TrainTicket'
 import Homework from "./Pages/Homework/Homework"
 import cookie from 'react-cookies'
-import Notifications from 'react-notify-toast'
 import NotFound from './Pages/NotFound'
-import Popup from './components/Popup'
 
 import loader from "./assets/images/Eclipse.gif"
 import classes from "./components/timelineComp/Timeline/timeline.css"
 
-import { Provider, Consumer, appStore } from './Provider'
+import { appStore } from './Provider'
 
 import {
     LOGIN_STATE_CHANGED,
     ISTEACHER_STATE_CHANGED,
     ISSTUDENT_STATE_CHANGED,
     uiStore,
-    timelineStore,
-    TIMELINE_ITEMS_CHANGED,
-    ALL_TEACHERS_CHAGNED,
-    TIMELINE_GROUPS_CHANGED,
-    GROUPS_WITH_IDS_CHANGED,
-    ALL_SUNDAYS_CHANGED,
-    ALL_POSSIBLE_MODULES_CHANGED
 } from './store'
-import { errorMessage } from './notify';
-import { getTeachers } from './util';
-import { onStateChange } from './components/timelineComp/ClassBarRowComp/ClassBarRowComp';
 
+import { errorMessage } from './notify'
+
+import { Mains } from './appMains'
 
 const defaultState = {
     auth: {
@@ -174,12 +165,10 @@ class App extends Component {
                 visitor: true,
                 ok: true,
             },
-            done: true,
             scopes: {
                 ...this.state.scopes,
                 ok: true
             },
-            update: false
         })
     }
 
@@ -235,7 +224,7 @@ class App extends Component {
 
     componentWillUpdate(nextProps, nextState) {
         // in case a controlled visitor update
-        if (nextState.auth.visitor) return void (0)
+        if (nextState.auth.visitor) return
 
         // NOTE: NO BODY CAN ARRIVE AFTER THIS LINE IF HE IS NOT LOGGED IN
 
@@ -258,13 +247,10 @@ class App extends Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        const { auth, scopes, routes, timeline, done } = prevState
+        const { auth, scopes, routes, timeline, done } = this.state
+        // making sure that everything is Okay
+        const isOkay = auth.ok && scopes.ok && routes.ok && timeline.ok
 
-        if (auth.visitor) { // Safe visitor updating
-            return this.setState({
-                update: false
-            })
-        }
         // After all of the checking for login and Stuff
         // He need his page!!
         // - NOTE: this function here Only for assigning 
@@ -272,16 +258,19 @@ class App extends Component {
         // - AND NOTE: without this function the user may never
         // -- arrive to his distenation path
 
-        // making sure that everything is Okay
-        const isOkay = auth.ok && scopes.ok && routes.ok && timeline.ok
-
         if (!isOkay && !done) return this.setState({ done: false, update: false })
         else if (isOkay && !done) return this.setState({ done: true, update: true })
         else if (!this.findRoutes(prevState)) return this.setState({ update: false })
     }
 
     globalApp_setState = data => {
-        this.setState(data)
+        if (typeof data === 'function') {
+            this.setState(prevState => {
+                const result = data(prevState)
+                return { ...result, update: true }
+            })
+        }
+        else this.setState({ ...data, update: true })
     }
 
     render() {
@@ -318,7 +307,7 @@ class App extends Component {
             isLoggedIn
         }
 
-        const SetTimelineMains_props = {
+        const Mains_props = {
             globalApp_setState,
             auth: {
                 ok,
@@ -330,248 +319,36 @@ class App extends Component {
         // -- will contain all of the same user scopes paths & props
         this.findRoutes()
         return (
-            <Provider>{/* we setted up the Provider value as appStore in src/Provider.js */}
-                <Consumer>{appStore => { // releasing the appStore Object
-                    return (
-                        <BrowserRouter>
-                            <React.Fragment>
-                                {ok && <SetTimelineMains {...SetTimelineMains_props} />}
-                                <Header {...Header_props} />
-                                <Popup />
-                                <Notifications />
-                                {
-                                    (!done) ?
-                                        <div className={classes.divLoading}>
-                                            <img src={loader} alt="loader" className={classes.load} />
-                                        </div>
-                                        :
-                                        <div>
-                                            <Switch>
-                                                { // every Route the user has an access scopes to it will be rendered here
-                                                    securedRouteProps.map(item => <Route key={item.path} {...item} />)
-                                                }
-                                                <Redirect exact strict from='/' to='/timeline' />
-                                                { // the user isn't logged in OR the lifecycle done AND No route found render this Component
-                                                    (!this.state.isLoggedIn || this.state.done) && <Route {...this.routes.NotFound} />
-                                                }
-                                            </Switch>
-                                        </div>
-                                }
-                                <Footer />
-                            </React.Fragment>
-                        </BrowserRouter>
-                    )
-                }}</Consumer>
-            </Provider>
+            <BrowserRouter>
+                <React.Fragment>
+                    <Header {...Header_props} />
+                    {ok && <Mains {...Mains_props} />}
+                    {
+                        (!done) ?
+                            <div className={classes.divLoading}>
+                                <img src={loader} alt="loader" className={classes.load} />
+                            </div>
+                            :
+                            <div>
+                                <Switch>
+                                    { // every Route the user has an access scopes to it will be rendered here
+                                        securedRouteProps.map(item => <Route key={item.path} {...item} />)
+                                    }
+                                    <Redirect exact strict from='/' to='/timeline' />
+                                    { // the user isn't logged in OR the lifecycle done AND No route found render this Component
+                                        (!this.state.isLoggedIn || this.state.done) && <Route {...this.routes.NotFound} />
+                                    }
+                                </Switch>
+                            </div>
+                    }
+                    <Footer />
+                </React.Fragment>
+            </BrowserRouter>
         )
     }
 
     componentDidCatch(error, info) {
         errorMessage(error)
-    }
-}
-
-
-class SetTimelineMains extends Component { // timeline app state
-    state = {
-        local_update: true,
-        // teachers_update: true,
-        timeline: {
-            ok: false,
-            items: {},
-            groups: [],
-            teachers: [],
-            groupsWithIds: [],
-            modules: [],
-            allSundays: []
-        }
-    }
-
-    componentWillMount() {
-
-        console.log('hello World!')
-
-        const token = cookie.load('token')
-        if (!token) this.setState({
-            local_update: false,
-            timeline: {
-                // we need the render to be done...
-                ...this.state.timeline,
-                teachers: null,
-                ok: true,
-            }
-        })
-
-        appStore.on('timelineState_okay', () => {
-            this.setState(prevState => ({
-                timeline: {
-                    ...prevState.timeline,
-                    ok: true
-                }
-            }))
-        })
-
-        if (this.props.auth.hasRole && !this.state.timeline.ok) {
-            getTeachers().then(res => {
-                const teachers = res.filter(user => user.role === "teacher")
-                timelineStore.setState({
-                    type: ALL_TEACHERS_CHAGNED,
-                    payload: {
-                        teachers
-                    }
-                })
-                return teachers
-            }).then(teachers => {
-                this.setState({
-                    timeline: {
-                        // because it's async and it will never arrive here again 
-                        // - we need the current state with the time the request ends
-                        ...this.state.timeline,
-                        teachers
-                    }
-                })
-            })
-        }
-
-        timelineStore.subscribe(mergedData => {
-            const timeline_state = param => {
-                this.setState(prevState => ({
-                    timeline: {
-                        ...prevState.timeline,
-                        [param]: mergedData.payload[param]
-                    }
-                }))
-            }
-
-            if (mergedData.type === TIMELINE_ITEMS_CHANGED) timeline_state('items')
-            if (mergedData.type === ALL_TEACHERS_CHAGNED) timeline_state('teachers')
-            if (mergedData.type === TIMELINE_GROUPS_CHANGED) timeline_state('groups')
-            if (mergedData.type === GROUPS_WITH_IDS_CHANGED) timeline_state('groupsWithIds')
-            if (mergedData.type === ALL_POSSIBLE_MODULES_CHANGED) timeline_state('modules')
-            if (mergedData.type === ALL_SUNDAYS_CHANGED) timeline_state('allSundays')
-
-        })
-    }
-
-    componentDidMount() {
-        // should grap the main timeline items no more
-        timelineStore.fetchItems(false) // from the server not the cache
-    }
-
-    shouldComponentUpdate(nextProps, nextState) {
-        const timeline = appStore.state.timeline
-
-        const timeline_state = {
-            timeline: {
-                ok: timeline.ok,
-                items: timeline.items,
-                groups: timeline.groups,
-                teachers: timeline.teachers,
-                groupsWithIds: timeline.groupsWithIds,
-                modules: timeline.modules,
-                allSundays: timeline.allSundays
-            }
-        }
-        // console.log(timeline_state)
-        return onStateChange(timeline_state, nextState, {}, () => {
-            if (!appStore.state.timeline.ok) {
-                appStore.set(timeline)
-            }
-        })
-    }
-    /*
-        if the appStore.timeline is Not okay Build it
-        when ever appStore.timeline is Okay Emit (globalApp_setState with appStore.timeline passed to it) event and Omit it
-    */
-    timeOut = 0
-    componentWillUpdate(nextProps, nextState) {
-        const hasRole = this.props.auth.hasRole
-
-
-        const { lifeCycle } = appStore.state.main
-        if (lifeCycle.done) {
-            appStore.set(prevAppState => ({
-                timeline: {
-                    ...prevAppState.timeline,
-                    ...nextState.timeline
-                }
-            }))
-        }
-
-        if (this.props.auth.ok && !hasRole) {
-            return this.setState({
-                timeline: {
-                    // we need the render to be done...
-                    ...nextState.timeline,
-                }
-            })
-        }
-
-        this.timeOut++
-        const { groups, items, ok } = nextState.timeline
-        if (groups.length && !ok) {
-            this.setState({
-                timeline: {
-                    ...nextState.timeline,
-                    ok: groups.length === Object.keys(items).length
-                }
-            })
-        } else if (this.timeOut === 500 && !groups.length && !ok) {
-            this.setState({
-                timeline: {
-                    ...nextState.timeline,
-                    ok: true
-                }
-            })
-            errorMessage('Oops Timeout | No Timeline Items Found')
-        } else if (this.timeOut < 150 && !Object.keys(items).length && !groups.length && !ok) {
-            this.setState({
-                timeline: {
-                    // we need the render to be done...
-                    ...nextState.timeline,
-                    ok: true,
-                }
-            })
-        }
-
-    }
-
-    componentDidUpdate(prevProps, prevState) {
-        const { groups, items } = prevState.timeline
-        // if (groups.length === Object.keys(items).length) {
-        //     appStore.emit('timelineState_okay')
-        // }
-        // console.log('prevState.timeline.ok', appStore.state.main)
-    }
-
-    timeline_setState = data => {
-        this.setState(data)
-        this.props.globalApp_setState({ update: true })
-    }
-
-    render() {
-        const timeline = {
-            timeline_setState: this.timeline_setState,
-            timeline: {
-                ...this.state.timeline,
-            }
-        }
-        const { lifeCycle } = appStore.state.main
-        if (this.state.timeline.ok && !lifeCycle.done) {
-            // if is't Okay and it's not equal to the latest change bind it to this Component
-            // Otherwise let the globalApp_setState bind to the ( global setState )
-            appStore.set(timeline) // setting up appStore Object Content
-            this.props.globalApp_setState(prevState => ({
-                timeline: {
-                    ...prevState.timeline,
-                    timeline_setState: this.timeline_setState,
-                    ok: this.state.timeline.ok
-                },
-                update: true
-            }))
-        }
-        // console.log(this.state)
-        return '' // nothing needs to render from this functional Component
     }
 }
 

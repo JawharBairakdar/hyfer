@@ -11,6 +11,7 @@ import leftArrow2 from './icons/leftArrow2.svg'
 import graduateCap from './icons/graduateCap.svg'
 
 import { timelineStore } from '../../../../store'
+import { appStore } from '../../../../Provider';
 
 export default class DropdownList extends Component {
     state = {
@@ -37,33 +38,37 @@ export default class DropdownList extends Component {
 
     weekLonger = e => {
         e.stopPropagation()
-        const { selectedModule } = this.props
+        const { selectedModule } = appStore.state.timeline
         timelineStore.updateModule(selectedModule, 'weekLonger')
     }
 
     weekShorter = e => {
         e.stopPropagation()
-        const { selectedModule } = this.props
+        const { selectedModule } = appStore.state.timeline
         timelineStore.updateModule(selectedModule, 'weekShorter')
     }
 
     moveLeft = e => {
         e.stopPropagation()
 
-        const { selectedModule } = this.props
+        const { selectedModule } = appStore.state.timeline
         timelineStore.updateModule(selectedModule, 'moveLeft')
     }
 
     moveRight = e => {
         e.stopPropagation()
 
-        const { selectedModule } = this.props
+        const { selectedModule } = appStore.state.timeline
         timelineStore.updateModule(selectedModule, 'moveRight')
     }
 
     checkModuleIsLast = () => {
-        const { position, group_name } = this.props.selectedModule
-        const classModules = this.props.allModules.filter(
+        const {
+            selectedModule: { position, group_name }
+        } = appStore.state.timeline
+
+        const allModules = appStore.state.timeline.items[group_name]
+        const classModules = allModules.filter(
             module => module.group_name === group_name
         )
         const itemsAfter = classModules.filter(item => item.position > position)
@@ -73,16 +78,19 @@ export default class DropdownList extends Component {
     removeModule = e => {
         e.stopPropagation()
 
-        const { selectedModule } = this.props
+        const { selectedModule } = appStore.state.timeline
         timelineStore.updateModule(selectedModule, 'removeModule')
     }
 
     render() {
+        const { selectedModule } = appStore.state.timeline
+        const { isATeacher } = appStore.state.main.auth
+
         let moveLeft = this.moveLeft
         let moveRight = this.moveRight
         let rightDisableClass = null
         let leftDisableClass = null
-        if (this.props.selectedModule.position === 0) {
+        if (selectedModule.position === 0) {
             moveLeft = null
             leftDisableClass = classes.disabled
         }
@@ -92,7 +100,7 @@ export default class DropdownList extends Component {
             rightDisableClass = classes.disabled
         }
 
-        if (!this.props.isTeacher) {
+        if (!isATeacher) {
             return null
         }
 

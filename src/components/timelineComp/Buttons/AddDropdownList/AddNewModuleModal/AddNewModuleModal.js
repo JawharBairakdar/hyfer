@@ -4,7 +4,7 @@ import classes from './addNewModuleModal.css'
 import { timelineStore } from '../../../../../store'
 import moment from 'moment'
 import { errorMessage } from '../../../../../notify'
-import { Consumer, appStore } from '../../../../../Provider'
+import { appStore } from '../../../../../Provider'
 
 export default class AddNewModuleModal extends Component {
     state = {

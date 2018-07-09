@@ -5,6 +5,7 @@ import {
     ALL_POSSIBLE_MODULES_CHANGED,
     ALL_SUNDAYS_CHANGED,
     INFO_SELECTED_MDOULE_CHANGED,
+    INFO_MDOULES_CHANGED,
     GROUPS_WITH_IDS_CHANGED
 } from "./"
 
@@ -26,7 +27,7 @@ import {
     getAllGroupsWithIds
 } from "../util"
 
-import { errorMessage } from '../notify'
+import { errorMessage, warning } from '../notify'
 
 const BASE_URL = "http://localhost:3005"
 
@@ -62,8 +63,14 @@ export default function () {
         return _data
     }
 
-    const fetchItems = async isTeacher => {
-        const timelineItems = await getTimelineItems(
+    const fetchItems_cache = {
+        timelineItems: null,
+        groupsWithIds: null,
+        withEndingDate: null,
+        allPossibleModules: null,
+    }
+    const fetchItems = async cached => {
+        const timelineItems = (cached && fetchItems_cache.timelineItems) || await getTimelineItems(
             BASE_URL + "/api/timeline"
         ) // if any error appears we will catch it by propagation
         // set the state with the array of all current groups [maybe needed for sidecolumn group names]
@@ -76,7 +83,7 @@ export default function () {
             orderedTimelineItems[group] = timelineItems[group]
         })
 
-        const groupsWithIds = await getAllGroupsWithIds() // the error has been throwed
+        const groupsWithIds = (cached && fetchItems_cache.groupsWithIds) || await getAllGroupsWithIds() // the error has been throwed
 
         setState({
             type: GROUPS_WITH_IDS_CHANGED,
@@ -85,7 +92,7 @@ export default function () {
             }
         })
 
-        const withEndingDate = setEndingDateForModules(orderedTimelineItems, groups) // group names
+        const withEndingDate = (cached && fetchItems_cache.withEndingDate) || setEndingDateForModules(orderedTimelineItems, groups) // group names
         // set the state with the new received items
         setState({
             type: TIMELINE_ITEMS_CHANGED,
@@ -95,7 +102,7 @@ export default function () {
         })
 
         // get all possible modules for addition
-        const allPossibleModules = await getALlPossibleModules().catch(e => {
+        const allPossibleModules = (cached && fetchItems_cache.allPossibleModules) || await getALlPossibleModules().catch(e => {
             // specific error catch it here.
             // we don't need any return on all of the users
             // On 403 Forbidden
@@ -116,6 +123,13 @@ export default function () {
             allWeeks,
             allSundays
         } = getAllTotalWeeksAndSundays(withEndingDate)
+
+        if (cached) {
+            fetchItems_cache['timelineItems'] = timelineItems
+            fetchItems_cache['groupsWithIds'] = groupsWithIds
+            fetchItems_cache['withEndingDate'] = withEndingDate
+            fetchItems_cache['allPossibleModules'] = allPossibleModules
+        }
 
         //set State with all sundays
         setState({
@@ -214,18 +228,19 @@ export default function () {
     }
 
     const getSharedDates = items => {
+        if (items.error) return warning(items.error)
         return getAllSharedDates(items)
     }
 
     const getSelectedModuleInfo = item => {
         // give it to util to handle
         // nothing is returning from it as a promise we can handle it here
-        getModulesOfGroup(item.id)
+        getModulesOfGroup(item ? item.id : null)
             .then(res => {
                 setState({
                     type: INFO_SELECTED_MDOULE_CHANGED,
                     payload: {
-                        allModulesOfGroup: res[item.position]
+                        allModulesOfGroup: res ? res[item.position] : null
                     }
                 })
             })
@@ -244,6 +259,6 @@ export default function () {
         addTheClass,
         getSharedDates,
         handleAssignTeachers,
-        getSelectedModuleInfo
+        getSelectedModuleInfo,
     }
 }

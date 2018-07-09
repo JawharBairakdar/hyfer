@@ -23,7 +23,7 @@ module.exports = function (app) {
     app.patch('/api/modules/:id', auth.hasRole('teacher'), modules.updateModule)
     app.delete('/api/modules/:id', auth.hasRole('teacher'), modules.deleteModule)
 
-    app.get('/api/running/:groupId', auth.hasRole('teacher'), runningModules.getRunningModules)
+    app.get('/api/running/:groupId', auth.hasRole('teacher|student'), runningModules.getRunningModules)
 
     app.patch('/api/running/update/:groupId/:position', auth.hasRole('teacher'), runningModules.updateRunningModule)
     app.patch('/api/running/split/:groupId/:position', auth.hasRole('teacher'), runningModules.splitRunningModule)
@@ -45,7 +45,7 @@ module.exports = function (app) {
   //app.get('/api/users', auth.hasRole('student|teacher'), users.getUsers)
   app.get('/api/users', auth.hasRole('teacher|student'), users.getUsers)
   app.get('/api/user/:id', auth.hasRole('teacher|student'), users.getUserById)
-  app.patch('/api/user/:id', auth.hasRole('teacher|student'), users.updateUser)
+  app.patch('/api/user/:id', auth.hasRole('teacher|student'), users.updateUser) // todo ((((((fixing the all users can edit all users!!!))))))
 
     app.patch('/api/history/:moduleId/:groupId', auth.isAuthenticated(), history.getHistory)
 

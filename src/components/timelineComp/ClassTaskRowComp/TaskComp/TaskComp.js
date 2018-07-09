@@ -3,11 +3,11 @@ import React, { Component } from 'react'
 import DropdownList from '../DropdownList/DropdownList'
 import classes from './taskComp.css'
 import AssignTeacherModal from '../DropdownList/AssignTeacherModal/AssignTeacherModal'
+import { appStore } from '../../../../Provider';
 
 export default class TaskComp extends Component {
     state = {
         assignTeacherModalIsToggled: false,
-        dontChangeSelectedItem: false
     }
 
     showAssignTeacherModal = e => {
@@ -21,58 +21,44 @@ export default class TaskComp extends Component {
 
     handleClickItem = e => {
         const { item } = this.props
-        this.props.itemClickHandler(e, item)
+        appStore.emit('Timeline-TaskComp-Click-Module', null, e, item)
     }
 
     render() {
+        let { width, height, active, item } = this.props
+
         const {
-            module_name,
-            starting_date,
-            ending_date,
-            duration,
-            color,
-            git_repo,
-            running_module_id,
-            id,
-            group_name
-        } = this.props.item
-        let { width, height, active } = this.props
+            module_name, running_module_id, duration,
+            git_repo, color, starting_date, ending_date,
+            id, group_name
+        } = item
+        const { selectedModule, infoSelectedModule } = appStore.state.timeline
+        const isSelected = infoSelectedModule && selectedModule
+        const validSelectedModule = isSelected && selectedModule.running_module_id === running_module_id
         if (duration > 1) {
             // add extra times width as much as needed but for the margin add all - 1 (for the first item it doesn't need any margin)
             width = width * duration + 16 * (duration - 1)
         }
-        let className = classes.flexWrapper
-        if (active) className += ` ${classes.active}`
+        const className = `${classes.flexWrapper} ${(active && classes.active) || ''}`
 
-        let dropdownList = null
-        if (
-            this.props.selectedModule &&
-            this.props.selectedModule.running_module_id ===
-            this.props.item.running_module_id
-        ) {
-            dropdownList = (
-                <div className={classes.dropdownListContainer}>
-                    <DropdownList
-                        isTeacher={this.props.isTeacher}
-                        showModal={this.showAssignTeacherModal}
-                        selectedModule={this.props.selectedModule}
-                        allModules={this.props.allModules}
-                    />
-                </div>
-            )
-        }
+        const dropdownList = (
+            <div className={classes.dropdownListContainer}>
+                <DropdownList
+                    showModal={this.showAssignTeacherModal}
+                />
+            </div>
+        )
+
         const theStart = starting_date
-        // theStart.add(2, 'hours')
 
         return (
             <div>
-                <AssignTeacherModal
+                {validSelectedModule && <AssignTeacherModal
                     teachers={this.props.teachers}
-                    infoSelectedModule={this.props.infoSelectedModule}
-                    visible={this.state.assignTeacherModalIsToggled}
-                    selectedModule={this.props.selectedModule}
-                    closeModal={this.hideAssignTeacherModal}
-                />
+                    id={selectedModule.running_module_id} //
+                    visible={this.state.assignTeacherModalIsToggled} //
+                    closeModal={this.hideAssignTeacherModal} //
+                />}
                 <div
                     className={classes.container}
                     style={{ width: width + 'px', height: height + 'px' }}
@@ -98,7 +84,7 @@ export default class TaskComp extends Component {
                             </p>
                         </div>
 
-                        {dropdownList}
+                        {(validSelectedModule && dropdownList) || null}
                     </div>
                 </div>
             </div>

@@ -202,6 +202,7 @@ export async function removeModule(chosenModule) {
 
 export async function getModulesOfGroup(groupId) {
     // used for a once in src\store\TimeLineStore.js
+    if (!groupId) return null
     const res = await fetch(`${BASE_URL}/api/running/${groupId}`, {
         headers: {
             'Authorization': 'Bearer ' + token,
